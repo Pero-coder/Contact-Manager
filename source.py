@@ -1,6 +1,6 @@
 import vobject
 import os
-from tkinter import Label, Tk, ttk, Canvas
+from tkinter import Tk, ttk
 from tkinter.messagebox import showinfo
 from math import ceil
 
