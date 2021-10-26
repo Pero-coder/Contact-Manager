@@ -1,6 +1,6 @@
 import vobject
 import os
-from tkinter import Tk, ttk
+from tkinter import Tk, ttk, Toplevel, StringVar
 from tkinter.messagebox import showinfo
 from math import ceil
 
@@ -62,6 +62,7 @@ class ContactList():
 
         self.generate_conatcts_list()
     
+
     def previous_page(self):
         self.page -= 1
         self.new_page -= 6
@@ -82,6 +83,24 @@ class ContactList():
         self.generate_conatcts_list()
 
 
+    def new_contact(self):
+        new_contact_window = Toplevel(window)
+        number1 = StringVar()
+        entry1 = ttk.Entry(window, textvariable=number1)
+        entry1.pack()
+
+        plus = ttk.Label(window, text="+")
+        plus.pack()
+
+        number2 = StringVar()
+        entry2 = ttk.Entry(window, textvariable=number2)
+        entry2.pack()
+
+        result = StringVar(value="=")
+        result_label = ttk.Label(window, textvariable=result)
+        result_label.pack()
+
+
     def generate_conatcts_list(self) -> None:
         
         previous_page_button = ttk.Button(window, text="<", command=self.previous_page)
@@ -97,6 +116,8 @@ class ContactList():
             next_page_button["state"] = "disabled"
         next_page_button.grid(column=2, row=6)
 
+        new_contact_button = ttk.Button(window, text="new contact")
+        new_contact_button.grid(column=1, row=7)
 
         try:
             # 0
