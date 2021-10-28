@@ -1,11 +1,24 @@
 import vobject
+import datetime
 import os
 from tkinter import Tk, ttk, Toplevel, StringVar
-from tkinter.messagebox import askyesno
+from tkinter.messagebox import askyesno, showerror, showinfo
 from math import ceil
 
 
 window = Tk()
+
+
+def str_to_date(date: str) -> datetime.date:
+    if len(date) == 10:
+        try:
+            date_tuple = tuple([int(x) for x in date.split('-')])
+            date_object = datetime.date(*date_tuple)
+            return date_object
+        except:
+            return
+    else:
+        return
 
 
 class PlaceholderEntry(ttk.Entry):
@@ -56,6 +69,10 @@ class ContactList():
         self.label5 = None
         self.contact5 = None
 
+        for contact in self.contacts:
+            if contact.bday.value[5:] == str(datetime.datetime.now().date())[5:]:
+                showinfo("Birthday reminder", f"{contact.fn.value} has it's birthday today!")
+
 
     def generate_contact_window(self, contact: vobject):
         contact_window = Toplevel(window)
@@ -90,7 +107,12 @@ class ContactList():
 
     def delete_contact(self, contact: vobject, contact_window: Toplevel):
         if askyesno("Delete contact", "Are you sure?"):
-            os.remove(f"vcards/{contact.fn.value}.vcf")
+            for filename in os.listdir("vcards"):
+                if filename.endswith(".vcf"):
+                    with open(f"vcards/{filename}", "r", encoding="utf8", newline="\n") as vcf_file:
+                        if contact.serialize() == vcf_file.read():
+                            delete_file = f"vcards/{filename}"
+            os.remove(delete_file)
             self.contacts.remove(contact)
             self.destroy_contacts()
             self.generate_conatcts_list()
@@ -180,17 +202,71 @@ class ContactList():
 
 
     def create_contact(self, name: StringVar, bday: StringVar, email: StringVar, phone: StringVar, new_contact_window: Toplevel, old_contact: vobject):
+        contact = vobject.vCard()
+
+        # Name
+        if name.get() == "":
+            showerror("Invalid input", "Name can not be blank!")
+            return
+        contact.add("FN").value = name.get()
+        
+        # Birthday
+        if bday.get() == "YYYY-MM-DD":
+            contact.add("BDAY").value = ""
+        elif str_to_date(bday.get()) is None:
+            showerror("Invalid input", "Entered date is not valid!")
+            return
+        else:
+            contact.add("BDAY").value = bday.get()
+
+        # Email
+        email_split = email.get().split("@")
+        if email.get() == "email@examp.le":
+            contact.add("EMAIL").value = ""
+        elif len(email_split) == 2 and len(email_split[1].split(".")) == 2:
+            contact.add("EMAIL").value = email.get()
+        else:
+            showerror("Invalid input", "Entered email is not valid!")
+            return
+        
+        # Phone
+        if phone.get().startswith("+"):
+            if len(phone.get().split("+")) > 2:
+                showerror("Invalid input", "Entered phone is not valid!")
+                return
+        if not phone.get().startswith(("-", "*", "/")):
+            if phone.get() == "+X XXX XXX XXX":
+                contact.add("TEL").value = ""
+            else:
+                phone_split = phone.get().split()
+                for i in phone_split:
+                    try:
+                        int(i)
+                    except ValueError:
+                        showerror("Invalid input", "Entered phone is not valid!")
+                        return
+                contact.add("TEL").value = phone.get()
+        else:
+            showerror("Invalid input", "Entered phone is not valid!")
+            return
+
+
+
         if old_contact is not None:
             os.remove(f"vcards/{old_contact.fn.value}.vcf")
             self.contacts.remove(old_contact)
+        
+        i = 0
+        multiple_file = ""
+        try:
+            while True:
+                open(f"vcards/{name.get()}{multiple_file}.vcf")
+                i += 1
+                multiple_file = f"{i}"
+        except FileNotFoundError:
+            pass
 
-        contact = vobject.vCard()
-        contact.add("FN").value = name.get()
-        contact.add("BDAY").value = bday.get()
-        contact.add("EMAIL").value = email.get()
-        contact.add("TEL").value = phone.get()
-
-        with open(f"vcards/{name.get()}.vcf", "w", newline="") as new_contact_file:
+        with open(f"vcards/{name.get()}{multiple_file}.vcf", "w", newline="") as new_contact_file:
             new_contact_file.write(contact.serialize())
         
         self.contacts.append(contact)
@@ -222,7 +298,7 @@ class ContactList():
             self.label = ttk.Label(window, text=self.contacts[0 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[0 + self.new_page]))
 
-            self.label.grid(column=1, row=0)
+            self.label.grid(column=0, row=0, columnspan=2)
             self.contact.grid(column=2, row=0)
         except IndexError:
             return
@@ -232,7 +308,7 @@ class ContactList():
             self.label1 = ttk.Label(window, text=self.contacts[1 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact1 = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[1 + self.new_page]))
 
-            self.label1.grid(column=1, row=1)
+            self.label1.grid(column=0, row=1, columnspan=2)
             self.contact1.grid(column=2, row=1)
         except IndexError:
             return    
@@ -242,7 +318,7 @@ class ContactList():
             self.label2 = ttk.Label(window, text=self.contacts[2 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact2 = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[2 + self.new_page]))
 
-            self.label2.grid(column=1, row=2)
+            self.label2.grid(column=0, row=2, columnspan=2)
             self.contact2.grid(column=2, row=2)
         except IndexError:
             return    
@@ -252,7 +328,7 @@ class ContactList():
             self.label3 = ttk.Label(window, text=self.contacts[3 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact3 = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[3 + self.new_page]))
 
-            self.label3.grid(column=1, row=3)
+            self.label3.grid(column=0, row=3, columnspan=2)
             self.contact3.grid(column=2, row=3)
         except IndexError:
             return
@@ -262,7 +338,7 @@ class ContactList():
             self.label4 = ttk.Label(window, text=self.contacts[4 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact4 = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[4 + self.new_page]))
 
-            self.label4.grid(column=1, row=4)
+            self.label4.grid(column=0, row=4, columnspan=2)
             self.contact4.grid(column=2, row=4)
         except IndexError:
             return 
@@ -272,7 +348,7 @@ class ContactList():
             self.label5 = ttk.Label(window, text=self.contacts[5 + self.new_page].fn.value, foreground = "white", background="blue")
             self.contact5 = ttk.Button(window, text="Show", command= lambda: self.generate_contact_window(self.contacts[5 + self.new_page]))
 
-            self.label5.grid(column=1, row=5)
+            self.label5.grid(column=0, row=5, columnspan=2)
             self.contact5.grid(column=2, row=5)
         except IndexError:
             return 
