@@ -1,7 +1,7 @@
 import vobject
 import datetime
 import os
-from tkinter import Tk, ttk, Toplevel, StringVar
+from tkinter import Menu, Tk, ttk, Toplevel, StringVar, filedialog
 from tkinter.messagebox import askyesno, showerror, showinfo
 from math import ceil
 
@@ -266,7 +266,7 @@ class ContactList():
         except FileNotFoundError:
             pass
 
-        with open(f"vcards/{name.get()}{multiple_file}.vcf", "w", newline="") as new_contact_file:
+        with open(f"vcards/{name.get()}{multiple_file}.vcf", "w", encoding="utf8", newline="") as new_contact_file:
             new_contact_file.write(contact.serialize())
         
         self.contacts.append(contact)
@@ -275,8 +275,53 @@ class ContactList():
         new_contact_window.destroy()
 
 
+    def import_file(self):
+        try:
+            imported_file = filedialog.askopenfile("r", defaultextension="vcf", title="Select file to import")
+            contact = vobject.readOne(imported_file.read())
+            imported_file.close()
+            self.contacts.append(contact)
+            with open(f"vcards/{contact.fn.value}.vcf", "w", encoding="utf8", newline="") as new_file:
+                new_file.write(contact.serialize())
+            self.destroy_contacts()
+            self.generate_conatcts_list()
+            showinfo("Import success", "File imported successfully!")
+        except:
+            showerror("Import error", "File import failed!")
+
+    def export_file(self):
+        try:
+            export_file = filedialog.askopenfile("r", defaultextension="vcf", title="Select file to export", initialdir="vcards/")
+            export_path = filedialog.askdirectory(title="Select export path")
+            contact = vobject.readOne(export_file.read())
+            export_file.close()
+            with open(f"{export_path}/{contact.fn.value}.vcf", "w", newline="") as vcf_file:
+                vcf_file.write(contact.serialize())
+            showinfo("Export success", "File exorted successfully!")
+        except:
+            showerror("Export error", "File export failed!")
+
+
+
     def generate_conatcts_list(self) -> None:
         
+        menubar = Menu(window)
+        window.config(menu=menubar)
+        file_menu = Menu(menubar, tearoff=False)
+        file_menu.add_command(
+            label="Import",
+            command=self.import_file,
+        )
+        file_menu.add_command(
+            label="Export",
+            command=self.export_file,
+        )
+        menubar.add_cascade(
+            label="File",
+            menu=file_menu,
+            underline=0
+        )
+
         previous_page_button = ttk.Button(window, text="<", command=self.previous_page)
         if self.page <= 1:
             previous_page_button["state"] = "disabled"
