@@ -297,10 +297,30 @@ class ContactList():
             export_file.close()
             with open(f"{export_path}/{contact.fn.value}.vcf", "w", newline="") as vcf_file:
                 vcf_file.write(contact.serialize())
-            showinfo("Export success", "File exorted successfully!")
+            showinfo("Export success", "File exported successfully!")
         except:
             showerror("Export error", "File export failed!")
 
+
+    def search_contact(self):
+        search_window = Toplevel(window)
+        search_window.title("Search contact")
+
+        search_request = StringVar()
+        searchbar = ttk.Entry(search_window, textvariable=search_request)
+        search_button = ttk.Button(search_window, text="Search", command=lambda: self.search(search_request.get(), search_window))
+        searchbar.pack()
+        search_button.pack()
+
+    def search(self, contact_str: str, search_window: Toplevel) -> None:
+        result_not_found = True
+        for contact in self.contacts:
+            if contact.fn.value == contact_str:
+                result_not_found = False
+                self.generate_contact_window(contact)
+                search_window.destroy()
+        if result_not_found:
+            showerror("No result", f"{contact_str} wasn't found!")
 
 
     def generate_conatcts_list(self) -> None:
@@ -308,14 +328,22 @@ class ContactList():
         menubar = Menu(window)
         window.config(menu=menubar)
         file_menu = Menu(menubar, tearoff=False)
+
         file_menu.add_command(
             label="Import",
             command=self.import_file,
         )
+
         file_menu.add_command(
             label="Export",
             command=self.export_file,
         )
+
+        file_menu.add_command(
+            label="Search",
+            command=self.search_contact,
+        )
+
         menubar.add_cascade(
             label="File",
             menu=file_menu,
