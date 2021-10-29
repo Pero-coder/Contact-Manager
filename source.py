@@ -412,7 +412,10 @@ class ContactList():
             contact = vobject.readOne(export_file.read())
             export_file.close()
 
-            with open(f"{export_path}/{contact.fn.value}.vcf", "w", newline="") as vcf_file:
+            with open(
+                    f"{export_path}/{contact.fn.value}.vcf", "w",
+                    newline="") as vcf_file:
+                    
                 vcf_file.write(contact.serialize())
 
             showinfo("Export success", "File exported successfully!")
